@@ -88,7 +88,7 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 	//   implement this method and use it as a helper during the updateWeights phase.
 
 	int min_id;
-	double d_x, d_y, min_distance;
+	double d_x, d_y, distance, min_distance;
 
 	for (int i = 0; i < observations.size(); i++) {
 		auto o = observations[i];
@@ -176,17 +176,17 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			int pred_id = new_obs[l].id;
 
 			// Get the coordinates of the prediction for the current observation
-			for (int m = 0; m < predictions.size(); k++) {
-				if (pred_id == predictions[m].id) {
-					pred_x = predictions[m].x;
-					pred_y = predictions[m].y;
+			for (int m = 0; m < pred.size(); m++) {
+				if (pred_id == pred[m].id) {
+					pred_x = pred[m].x;
+					pred_y = pred[m].y;
 				}
 			}
 
 			// Get the weight for the current observation
 			double std_x = std_landmark[0];
 			double std_y = std_landmark[1];
-			particles[i].weight += 1/(2*M_PI*std_x*std_y) * exp( -1 * (pow(pred_x-obs_x,2)/(2*pow(std_x, 2)) + (pow(pred_y-obs_y,2)/(2*pow(sts_y, 2)))));
+			particles[i].weight += 1/(2*M_PI*std_x*std_y) * exp( -1 * (pow(pred_x-obs_x,2)/(2*pow(std_x, 2)) + (pow(pred_y-obs_y,2)/(2*pow(std_y, 2)))));
 		}
 	}
 }
@@ -205,11 +205,11 @@ void ParticleFilter::resample() {
 	// Assign the particles based on the discrete distribution
 	for (int i = 0; i < num_particles; i++) {
 		auto index = disc(gen);
-		updated_particles.push_back(std::move(particles[index]))
+		updated_particles.push_back(std::move(particles[index]));
 	}
 
 	// Set the particles vector to the updated particles
-	particles = std::move(new_particles);
+	particles = std::move(updated_particles);
 }
 
 Particle ParticleFilter::SetAssociations(Particle particle, std::vector<int> associations, std::vector<double> sense_x, std::vector<double> sense_y)

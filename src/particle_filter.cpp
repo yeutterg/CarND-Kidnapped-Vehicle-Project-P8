@@ -27,7 +27,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
 
 	// Set the number of particles
-	num_particles = 99;
+	num_particles = 100;
 
 	// Resize weights based on the number of particles
 	// weights.resize(num_particles, 1.0f);
@@ -203,11 +203,17 @@ void ParticleFilter::resample() {
 	// NOTE: You may find std::discrete_distribution helpful here.
 	//   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
 
-	// Vector for the new particles
-	vector<Particle> updated_particles;
+  	// Get the current weights
+  	vector<double> weights;
+  	for (int i = 0; i < num_particles; i++) {
+    	weights.push_back(particles[i].weight);
+  	}
 	
 	// Compute the discrete distribution
 	std::discrete_distribution<int> discdist(weights.begin(), weights.end());
+
+	// Vector for the new particles
+	vector<Particle> updated_particles;
 
 	// Assign the particles based on the discrete distribution
 	for (int i = 0; i < num_particles; i++) {
@@ -217,8 +223,6 @@ void ParticleFilter::resample() {
 
 	// Set the particles vector to the updated particles
 	particles = updated_particles;
-
-
 }
 
 Particle ParticleFilter::SetAssociations(Particle particle, std::vector<int> associations, std::vector<double> sense_x, std::vector<double> sense_y)

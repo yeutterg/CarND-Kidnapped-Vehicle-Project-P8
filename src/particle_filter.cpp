@@ -27,10 +27,10 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
 
 	// Set the number of particles
-	num_particles = 100;
+	num_particles = 99;
 
 	// Resize weights based on the number of particles
-	weights.resize(num_particles, 1.0f);
+	// weights.resize(num_particles, 1.0f);
 
 	// Create a Gaussian/normal distribution for x, y, and theta
 	normal_distribution<double> dist_x(x, std[0]);
@@ -87,26 +87,31 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 	// NOTE: this method will NOT be called by the grading code. But you will probably find it useful to 
 	//   implement this method and use it as a helper during the updateWeights phase.
 
-	int min_id;
-	double d_x, d_y, distance, min_distance;
-
 	for (int i = 0; i < observations.size(); i++) {
-		auto o = observations[i];
-		min_id = -1;
-		min_distance = INFINITY;
+		
+		// Set the minimum distance to infinity to start
+		double min_distance = INFINITY;
+
+		// Get the current observation
+		LandmarkObs o = observations[i];
+
+		// Placeholder for the id to be set
+		int min_id = -1;
 
 		for (int j = 0; j < predicted.size(); j++) {
-			auto pred = predicted[i];
+			// Get the current prediction
+			LandmarkObs pred = predicted[j];
 
 			// Get the distance between predicted and observed points
-			d_x = pred.x - o.x;
-			d_y = pred.y - o.y;
-			distance = d_x * d_x + d_y * d_y;
+			// double d_x = pred.x - o.x;
+			// double d_y = pred.y - o.y;
+			// double distance = d_x * d_x + d_y * d_y;
+			double distance = dist(o.x, o.y, pred.x, pred.y);
 
 			// Find the predicted landmark closest to the observed landmark
 			if (distance < min_distance) {
 				min_distance = distance;
-				min_id = j;
+				min_id = pred.id;
 			}
 		}
 
@@ -128,7 +133,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	//   3.33
 	//   http://planning.cs.uiuc.edu/node99.html
 
-	// Iterate overl all particles
+	// Iterate over all particles
 	for (int i = 0; i < num_particles; i++) {
 
 		// Create a vector for locations that are within range of the particle
@@ -168,6 +173,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		// Set the weight back to 1.0
 		particles[i].weight = 1.0f;
 
+		// Compute the predictions and their weights
 		for (int l = 0; l < new_obs.size(); l++) {
 			double obs_x = new_obs[l].x;
 			double obs_y = new_obs[l].y;
@@ -180,13 +186,14 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 				if (pred_id == pred[m].id) {
 					pred_x = pred[m].x;
 					pred_y = pred[m].y;
+					break;
 				}
 			}
 
 			// Get the weight for the current observation
 			double std_x = std_landmark[0];
 			double std_y = std_landmark[1];
-			particles[i].weight += 1/(2*M_PI*std_x*std_y) * exp( -1 * (pow(pred_x-obs_x,2)/(2*pow(std_x, 2)) + (pow(pred_y-obs_y,2)/(2*pow(std_y, 2)))));
+			particles[i].weight *= 1/(2*M_PI*std_x*std_y) * exp( -1 * (pow(pred_x-obs_x,2)/(2*pow(std_x, 2)) + (pow(pred_y-obs_y,2)/(2*pow(std_y, 2)))));
 		}
 	}
 }
@@ -197,19 +204,21 @@ void ParticleFilter::resample() {
 	//   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
 
 	// Vector for the new particles
-	std::vector<Particle> updated_particles;
-
+	vector<Particle> updated_particles;
+	
 	// Compute the discrete distribution
-	std::discrete_distribution<int> disc(weights.begin(), weights.end());
+	std::discrete_distribution<int> discdist(weights.begin(), weights.end());
 
 	// Assign the particles based on the discrete distribution
 	for (int i = 0; i < num_particles; i++) {
-		auto index = disc(gen);
-		updated_particles.push_back(std::move(particles[index]));
+		int index = discdist(gen);
+		updated_particles.push_back(particles[index]);
 	}
 
 	// Set the particles vector to the updated particles
-	particles = std::move(updated_particles);
+	particles = updated_particles;
+
+
 }
 
 Particle ParticleFilter::SetAssociations(Particle particle, std::vector<int> associations, std::vector<double> sense_x, std::vector<double> sense_y)
